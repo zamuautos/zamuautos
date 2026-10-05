@@ -1,0 +1,32 @@
+export const vehicles = [
+  {
+    id: 1,
+    brand: "Mazda",
+    model: "CX-5",
+    year: 2021,
+    kilometers: 79000,
+    transmission: "Automática",
+    price: 429900,
+    image: "/images/cx5.jpg",
+  },
+  {
+    id: 2,
+    brand: "Toyota",
+    model: "Corolla",
+    year: 2022,
+    kilometers: 36000,
+    transmission: "Automático",
+    price: 365000,
+    image: "/images/corolla.jpg",
+  },
+  {
+    id: 3,
+    brand: "Volkswagen",
+    model: "Tiguan",
+    year: 2020,
+    kilometers: 64000,
+    transmission: "DSG",
+    price: 459900,
+    image: "/images/tiguan.jpg",
+  },
+];
