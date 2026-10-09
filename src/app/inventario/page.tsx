@@ -1,28 +1,13 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 
 export default async function InventarioPage() {
   const supabase = await createClient();
-const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect("/login");
-  }
-  const allowedUsers = [
-    "78b04881-da55-4064-bee2-61082a88c4a4",
-    "47fa725d-7a68-4c1f-9d4d-51cd6a4685f0",
-  ];
-
-  if (!allowedUsers.includes(user.id)) {
-    redirect("/");
-  }
   const { data: vehicles, error } = await supabase
-.from("vehicles")
-.select("*")
-.eq("available", true);
+    .from("vehicles")
+    .select("*");
+
   if (error) {
     return <p>Error: {error.message}</p>;
   }
@@ -44,42 +29,71 @@ const {
                 .getPublicUrl(imageName).data.publicUrl
             : null;
 
+          const status = String(
+            vehicle.status ??
+              (vehicle.available ? "disponible" : "vendido")
+          ).toLowerCase();
+
+          const statusLabel =
+            status === "apartado"
+              ? "APARTADO"
+              : status === "vendido"
+              ? "VENDIDO"
+              : "DISPONIBLE";
+
+          const statusColor =
+            status === "apartado"
+              ? "bg-yellow-500 text-black"
+              : status === "vendido"
+              ? "bg-red-600 text-white"
+              : "bg-green-600 text-white";
+
           return (
             <div
               key={vehicle.id}
-             className="w-full max-w-[320px] mx-auto md:max-w-none border border-gray-700 rounded-2xl overflow-hidden ..."
+              className="w-full max-w-[320px] mx-auto md:max-w-none border border-gray-700 rounded-2xl overflow-hidden bg-gray-900"
             >
               <Link href={`/inventario/${vehicle.id}`}>
                 {imageUrl && (
                   <img
                     src={imageUrl}
                     alt={`${vehicle.brand} ${vehicle.model}`}
-              className="w-full h-48 md:h-64 object-cover"
+                    className="w-full h-48 md:h-64 object-cover"
                   />
                 )}
               </Link>
 
               <div className="p-5">
-              <h2 className="text-xl md:text-2xl font-bold">
+                <h2 className="text-xl md:text-2xl font-bold">
                   {vehicle.brand} {vehicle.model}
                 </h2>
 
-                <p className="mt-2 text-sm md:text-base">Año: {vehicle.year}</p>
+                <p className="mt-2 text-sm md:text-base">
+                  Año: {vehicle.year}
+                </p>
 
                 <p className="text-sm md:text-base">
                   Kilometraje: {vehicle.mileage?.toLocaleString()} km
                 </p>
 
-              <p className="text-sm md:text-base">
+                <p className="text-sm md:text-base">
                   ${vehicle.price?.toLocaleString()}
                 </p>
 
-                <Link
-                  href={`/inventario/${vehicle.id}`}
-                  className="inline-block mt-5 border border-white rounded-lg px-5 py-2 hover:bg-white hover:text-black"
-                >
-                  Ver vehículo
-                </Link>
+                <div className="flex flex-wrap items-center gap-3 mt-5">
+                  <Link
+                    href={`/inventario/${vehicle.id}`}
+                    className="inline-block border border-white rounded-lg px-5 py-2 hover:bg-white hover:text-black"
+                  >
+                    Ver vehículo
+                  </Link>
+
+                  <span
+                    className={`inline-block rounded-lg px-3 py-2 text-sm font-bold ${statusColor}`}
+                  >
+                    {statusLabel}
+                  </span>
+                </div>
               </div>
             </div>
           );
