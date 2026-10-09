@@ -10,8 +10,9 @@ type Vehicle = {
   year: number | null;
   price: number | null;
   available: boolean | null;
-  featured?: boolean | null;
-images: string[] | null;
+  status: string | null;
+  featured: boolean | null;
+  images: string[] | null;
 };
 
 export default function AdminVehicleList() {
@@ -24,13 +25,18 @@ export default function AdminVehicleList() {
 
       const { data, error } = await supabase
         .from("vehicles")
-        .select("id, brand, model, year, price, available,featured, images")
+        .select(
+          "id, brand, model, year, price, available, status, featured, images"
+        )
         .order("created_at", { ascending: false });
 
       if (error) {
-alert(`Error: ${error.message} | Código: ${error.code} | Detalle: ${error.details}`);
+        console.error(error);
+        alert(
+          `Error al cargar vehículos: ${error.message}`
+        );
       } else {
-        setVehicles(data ?? []);
+        setVehicles((data ?? []) as Vehicle[]);
       }
 
       setLoading(false);
@@ -41,65 +47,76 @@ alert(`Error: ${error.message} | Código: ${error.code} | Detalle: ${error.detai
 
   async function toggleAvailability(vehicle: Vehicle) {
     const supabase = createClient();
+
     const newAvailable = vehicle.available === false;
+    const newStatus = newAvailable ? "Disponible" : "Vendido";
 
     const { error } = await supabase
       .from("vehicles")
-      .update({ available: newAvailable })
+      .update({
+        available: newAvailable,
+        status: newStatus,
+      })
       .eq("id", vehicle.id);
 
     if (error) {
       console.error(error);
-      alert("No se pudo actualizar el vehículo.");
+      alert("No se pudo actualizar el estado del vehículo.");
       return;
     }
 
     setVehicles((current) =>
       current.map((item) =>
         item.id === vehicle.id
-          ? { ...item, available: newAvailable }
+          ? {
+              ...item,
+              available: newAvailable,
+              status: newStatus,
+            }
           : item
       )
     );
   }
-async function toggleFeatured(vehicle: Vehicle) {
-  const supabase = createClient();
-  const newFeatured = vehicle.featured !== true;
 
-  if (newFeatured) {
-    const { error: clearError } = await supabase
+  async function toggleFeatured(vehicle: Vehicle) {
+    const supabase = createClient();
+    const newFeatured = vehicle.featured !== true;
+
+    if (newFeatured) {
+      const { error: clearError } = await supabase
+        .from("vehicles")
+        .update({ featured: false })
+        .eq("featured", true);
+
+      if (clearError) {
+        console.error(clearError);
+        alert("No se pudo cambiar el vehículo destacado.");
+        return;
+      }
+    }
+
+    const { error } = await supabase
       .from("vehicles")
-      .update({ featured: false })
-      .eq("featured", true);
+      .update({ featured: newFeatured })
+      .eq("id", vehicle.id);
 
-    if (clearError) {
-      console.error(clearError);
+    if (error) {
+      console.error(error);
       alert("No se pudo cambiar el vehículo destacado.");
       return;
     }
+
+    setVehicles((current) =>
+      current.map((item) =>
+        item.id === vehicle.id
+          ? { ...item, featured: newFeatured }
+          : newFeatured
+            ? { ...item, featured: false }
+            : item
+      )
+    );
   }
 
-  const { error } = await supabase
-    .from("vehicles")
-    .update({ featured: newFeatured })
-    .eq("id", vehicle.id);
-
-  if (error) {
-    console.error(error);
-    alert("No se pudo cambiar el vehículo destacado.");
-    return;
-  }
-
-  setVehicles((current) =>
-    current.map((item) =>
-      item.id === vehicle.id
-        ? { ...item, featured: newFeatured }
-        : newFeatured
-          ? { ...item, featured: false }
-          : item
-    )
-  );
-}
   async function deleteVehicle(vehicle: Vehicle) {
     const confirmed = window.confirm(
       `¿Eliminar definitivamente ${vehicle.brand} ${vehicle.model}? Esta acción no se puede deshacer.`
@@ -110,17 +127,21 @@ async function toggleFeatured(vehicle: Vehicle) {
     }
 
     const supabase = createClient();
-if (vehicle.images && vehicle.images.length > 0) {
-  const { error: storageError } = await supabase.storage
-    .from("vehicle-images")
-    .remove(vehicle.images);
 
-  if (storageError) {
-    console.error(storageError);
-    alert("No se pudieron eliminar las fotografías del vehículo.");
-    return;
-  }
-}
+    if (vehicle.images && vehicle.images.length > 0) {
+      const { error: storageError } = await supabase.storage
+        .from("vehicle-images")
+        .remove(vehicle.images);
+
+      if (storageError) {
+        console.error(storageError);
+        alert(
+          "No se pudieron eliminar las fotografías del vehículo."
+        );
+        return;
+      }
+    }
+
     const { error } = await supabase
       .from("vehicles")
       .delete()
@@ -144,7 +165,9 @@ if (vehicle.images && vehicle.images.length > 0) {
       </h2>
 
       {loading ? (
-        <p className="text-gray-400">Cargando vehículos...</p>
+        <p className="text-gray-400">
+          Cargando vehículos...
+        </p>
       ) : vehicles.length === 0 ? (
         <p className="text-gray-400">
           No hay vehículos publicados.
@@ -170,19 +193,28 @@ if (vehicle.images && vehicle.images.length > 0) {
                   </p>
                 </div>
 
-                <span className="text-sm">
-                  {vehicle.available ? "Disponible" : "Vendido"}
+                <span
+                  className={
+                    vehicle.available === false
+                      ? "text-sm text-red-400"
+                      : "text-sm text-green-400"
+                  }
+                >
+                  {vehicle.available === false
+                    ? "Vendido"
+                    : "Disponible"}
                 </span>
               </div>
 
               <div className="mt-4 flex flex-wrap gap-3">
                 <button
+                  type="button"
                   onClick={() => toggleAvailability(vehicle)}
                   className="border border-gray-600 rounded-lg px-4 py-2"
                 >
-                  {vehicle.available
-                    ? "Marcar como vendido"
-                    : "Volver a disponible"}
+                  {vehicle.available === false
+                    ? "Volver a disponible"
+                    : "Marcar como vendido"}
                 </button>
 
                 <a
@@ -191,14 +223,19 @@ if (vehicle.images && vehicle.images.length > 0) {
                 >
                   Editar
                 </a>
-<button
-  onClick={() => toggleFeatured(vehicle)}
-  className="border border-yellow-500 text-yellow-400 rounded-lg px-4 py-2"
->
-  {vehicle.featured ? "Quitar destacado" : "Destacar"}
-</button>
-                <button
 
+                <button
+                  type="button"
+                  onClick={() => toggleFeatured(vehicle)}
+                  className="border border-yellow-500 text-yellow-400 rounded-lg px-4 py-2"
+                >
+                  {vehicle.featured
+                    ? "Quitar destacado"
+                    : "Destacar"}
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => deleteVehicle(vehicle)}
                   className="border border-red-600 text-red-400 rounded-lg px-4 py-2"
                 >
