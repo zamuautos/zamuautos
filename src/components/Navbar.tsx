@@ -20,12 +20,31 @@ export default async function Navbar() {
               ZAMU AUTOS
             </h1>
 
-            <a
-              href="/login"
-              className="text-sm text-gray-400 hover:text-white"
-            >
-              Administración
-            </a>
+            <details className="relative">
+  <summary className="cursor-pointer list-none text-sm text-gray-400 hover:text-white">
+    Administración ▼
+  </summary>
+
+  <div className="absolute left-0 z-50 mt-2 w-56 rounded-xl border border-gray-700 bg-black p-2">
+    {isOwner && (
+      <a href="/admin/resenas" className="block rounded-lg px-3 py-2 hover:bg-gray-800">
+        Reseñas de clientes
+      </a>
+    )}
+
+    <a href="/admin/inventario" className="block rounded-lg px-3 py-2 hover:bg-gray-800">
+      Inventario
+    </a>
+
+    <a href="/admin/publicar" className="block rounded-lg px-3 py-2 hover:bg-gray-800">
+      Publicar nuevo vehículo
+    </a>
+
+    <a href="/logout" className="block rounded-lg px-3 py-2 hover:bg-gray-800">
+      Cerrar sesión
+    </a>
+  </div>
+</details>
           </div>
 
           <details className="relative">
